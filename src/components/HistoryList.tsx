@@ -1,7 +1,7 @@
 import React from 'react';
 import { History, Trash2, Clock, ChevronRight, Calendar } from 'lucide-react';
 import { HistoryItem } from '../types';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 interface HistoryListProps {
   history: HistoryItem[];
@@ -56,11 +56,11 @@ export const HistoryList: React.FC<HistoryListProps> = ({ history, onLoad, onDel
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
                   <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
-                    Rp {item.calculation.afterPreDistribution.toLocaleString('id-ID')}
+                    {formatCurrency(item.calculation.afterPreDistribution)}
                   </span>
                   <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 flex items-center gap-1">
                     <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    {new Date(item.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    {formatDate(item.timestamp, { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
                 <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">

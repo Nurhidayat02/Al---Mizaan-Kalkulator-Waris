@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { FaraidCalculation } from "../types";
+import { formatCurrency } from "../lib/utils";
 
 export interface AIConsultationResponse {
   explanation: string;
@@ -25,10 +26,10 @@ export class GeminiService {
       Anda adalah seorang konsultan Faraid (Hukum Waris Islam) yang ahli. 
       Berikut adalah data hasil perhitungan waris:
       
-      Total Harta Bersih: Rp ${calculation.afterPreDistribution.toLocaleString('id-ID')}
+      Total Harta Bersih: ${formatCurrency(calculation.afterPreDistribution)}
       
       Distribusi Ahli Waris:
-      ${calculation.distributions.map(d => `- ${d.label}: Rp ${d.amount.toLocaleString('id-ID')} (${d.shareDescription})`).join('\n')}
+      ${calculation.distributions.map(d => `- ${d.label}: ${formatCurrency(d.amount)} (${d.shareDescription})`).join('\n')}
       
       Tipe Penyesuaian: ${calculation.adjustmentType || 'Normal'}
       

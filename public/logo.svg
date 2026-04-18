@@ -1,28 +1,42 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Rounded Square Background for better icon fit (Common on Home Screens) -->
-  <rect width="512" height="512" rx="100" fill="white"/>
+  <!-- Full Bleed Green Background (Professional Emerald) -->
+  <rect width="512" height="512" fill="#0E7E4E"/>
   
-  <!-- Green Circle (Main Branding) -->
-  <circle cx="256" cy="190" r="165" fill="#0E7E4E"/>
-  
-  <!-- Gradient for the Gold Scales -->
+  <!-- Premium Gold Gradient -->
   <defs>
-    <linearGradient id="scalesGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFD700"/>
-      <stop offset="50%" stop-color="#EAB308"/>
-      <stop offset="100%" stop-color="#B45309"/>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#F59E0B"/>
+      <stop offset="70%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
     </linearGradient>
+    
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
 
-  <!-- High-Quality Vector Scales of Justice -->
-  <g transform="translate(141, 75) scale(0.45)" fill="url(#scalesGold)">
-    <path d="M256 0c-8.8 0-16 7.2-16 16v30.1C138.8 54.5 64 135 64 232v8c0 92.8 75.2 168 168 168h48c92.8 0 168-75.2 168-168v-8c0-97-74.8-177.5-176-185.9V16c0-8.8-7.2-16-16-16zm-32 232c0-53 43-96 96-96s96 43 96 96v8c0 53-43 96-96 96s-96-43-96-96v-8zm192 0c0 106-86 192-192 192S32 338 32 232v-8c0-106 86-192 192-192s192 86 192 192v8z" />
-    <!-- Detailed Scales Construction -->
-    <path d="M256 64v352m-160-224h320M96 192l-32 96h64l-32-96zm320 0l-32 96h64l-32-96z" stroke="url(#scalesGold)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="256" cy="64" r="20" />
-    <rect x="236" y="416" width="40" height="20" rx="5" />
+  <!-- Centered, High-Detail Gold Scales -->
+  <g transform="translate(64, 64) scale(0.75)" filter="url(#softGlow)">
+    <!-- Central Pillar -->
+    <path d="M256 460V60" stroke="url(#goldGrad)" stroke-width="24" stroke-linecap="round"/>
+    <circle cx="256" cy="60" r="28" fill="url(#goldGrad)"/>
+    <rect x="206" y="440" width="100" height="32" rx="16" fill="url(#goldGrad)"/>
+    
+    <!-- Main Beam -->
+    <path d="M50 140C150 100 362 100 462 140" stroke="url(#goldGrad)" stroke-width="20" stroke-linecap="round" fill="none"/>
+    
+    <!-- Left Scale -->
+    <g transform="translate(50, 140)">
+      <path d="M0 0L-80 220M0 0L80 220" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M-100 220C-100 280 100 280 100 220H-100Z" fill="url(#goldGrad)"/>
+    </g>
+    
+    <!-- Right Scale -->
+    <g transform="translate(462, 140)">
+      <path d="M0 0L-80 220M0 0L80 220" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M-100 220C-100 280 100 280 100 220H-100Z" fill="url(#goldGrad)"/>
+    </g>
   </g>
-
-  <!-- Clear "Al-Mizaan" Branding Text -->
-  <text x="256" y="450" text-anchor="middle" font-family="'Times New Roman', serif" font-size="82" font-weight="600" fill="#4B5563">Al-Mizaan</text>
 </svg>

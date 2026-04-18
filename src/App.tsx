@@ -24,7 +24,7 @@ import {
   User
 } from 'lucide-react';
 import { calculateFaraid, HEIR_LABELS, HEIR_LABELS_AR } from './lib/faraid-logic';
-import { cn } from './lib/utils';
+import { cn, formatCurrency, formatDate } from './lib/utils';
 import { ApiKeyManager } from './components/ApiKeyManager';
 import { HistoryList } from './components/HistoryList';
 import { GeminiService, AIConsultationResponse } from './services/geminiService';
@@ -206,20 +206,25 @@ export default function App() {
       let position = 0;
       let pageCount = 0;
 
-      // First page
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // First page - with 10mm margins
+      const margin = 10;
+      const innerWidth = pdfWidth - (margin * 2);
+      const innerImgHeight = (imgProps.height * innerWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'JPEG', margin, margin, innerWidth, innerImgHeight);
+      heightLeft = innerImgHeight - (pageHeight - (margin * 2));
 
       // Subsequent pages
+      let currentPage = 1;
       while (heightLeft > 0) {
-        pageCount++;
-        // Use a small overlap (e.g. 10mm) to ensure text cut at the bottom of one page 
-        // is visible at the top of the next
-        const overlap = 10; 
-        position = -(pageHeight * pageCount) + (overlap * pageCount);
+        const overlap = 5; 
+        const position = -( (pageHeight - (margin * 2)) * currentPage ) + (overlap * currentPage) + margin;
+        
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= (pageHeight - overlap);
+        pdf.addImage(imgData, 'JPEG', margin, position, innerWidth, innerImgHeight);
+        
+        heightLeft -= (pageHeight - (margin * 2) - overlap);
+        currentPage++;
       }
       
       pdf.save(`Laporan_Faraid_Al-Mizaan_${new Date().getTime()}.pdf`);
@@ -255,7 +260,7 @@ export default function App() {
               spacing: { after: 400 },
             }),
             new Paragraph({
-              text: `Tanggal: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+              text: `Tanggal: ${formatDate(new Date())}`,
               alignment: AlignmentType.RIGHT,
               spacing: { after: 120 },
             }),
@@ -276,13 +281,13 @@ export default function App() {
                 new TableRow({
                   children: [
                     new TableCell({ children: [new Paragraph("Total Harta Waris")], verticalAlign: VerticalAlign.CENTER }),
-                    new TableCell({ children: [new Paragraph({ text: `Rp ${assets.totalAssets.toLocaleString('id-ID')}`, alignment: AlignmentType.RIGHT })] }),
+                    new TableCell({ children: [new Paragraph({ text: formatCurrency(assets.totalAssets), alignment: AlignmentType.RIGHT })] }),
                   ],
                 }),
                 new TableRow({
                   children: [
                     new TableCell({ children: [new Paragraph("Harta Bersih (Tirkah)")], verticalAlign: VerticalAlign.CENTER }),
-                    new TableCell({ children: [new Paragraph({ text: `Rp ${calculation.afterPreDistribution.toLocaleString('id-ID')}`, alignment: AlignmentType.RIGHT })] }),
+                    new TableCell({ children: [new Paragraph({ text: formatCurrency(calculation.afterPreDistribution), alignment: AlignmentType.RIGHT })] }),
                   ],
                 }),
               ],
@@ -307,7 +312,7 @@ export default function App() {
                   children: [
                     new TableCell({ children: [new Paragraph(`${dist.count} ${HEIR_LABELS[dist.heirType]}`)] }),
                     new TableCell({ children: [new Paragraph(dist.isBlocked ? 'Terhijab' : dist.shareDescription)] }),
-                    new TableCell({ children: [new Paragraph(`Rp ${dist.amount.toLocaleString('id-ID')}`)] }),
+                    new TableCell({ children: [new Paragraph(formatCurrency(dist.amount))] }),
                   ],
                 })),
               ],
@@ -372,7 +377,7 @@ export default function App() {
     const netBeforeWill = (assets.isJointProperty ? assets.totalAssets * 0.5 : assets.totalAssets) - (assets.debts + assets.funeralCosts);
     const maxWill = Math.max(0, netBeforeWill * (1/3));
     if (assets.will > maxWill) {
-      errors.will = `Wasiat melebihi 1/3 harta bersih (Maks: Rp ${Math.floor(maxWill).toLocaleString('id-ID')})`;
+      errors.will = `Wasiat melebihi 1/3 harta bersih (Maks: ${formatCurrency(Math.floor(maxWill))})`;
     }
 
     return errors;
@@ -741,7 +746,7 @@ export default function App() {
                 <div className="bg-emerald-900-safe rounded-[2rem] p-6 sm:p-8 border-emerald-800-safe mb-8 sm:mb-10">
                   <p className="text-emerald-400 font-bold text-[10px] sm:text-sm uppercase tracking-widest mb-2">Harta Bersih (Tirkah)</p>
                   <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tight break-words">
-                    Rp {calculation.afterPreDistribution.toLocaleString('id-ID')}
+                    {formatCurrency(calculation.afterPreDistribution)}
                   </h3>
                 </div>
 
@@ -771,7 +776,7 @@ export default function App() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-base sm:text-xl font-black text-white break-all">
-                              Rp {dist.amount.toLocaleString('id-ID')}
+                              {formatCurrency(dist.amount)}
                             </p>
                             <p className="text-[10px] sm:text-xs font-bold text-emerald-500-safe">
                               {dist.fraction.numerator}/{dist.fraction.denominator}
@@ -978,7 +983,7 @@ export default function App() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-white mb-1">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p className="text-2xl font-black text-white mb-1">{formatDate(new Date())}</p>
               <p className="text-[10px] text-emerald-100 font-bold uppercase tracking-widest opacity-60">Pewaris: {assets.deceasedGender === 'MALE' ? 'Laki-Laki' : 'Perempuan'}</p>
             </div>
           </div>
@@ -994,11 +999,11 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-16">
                   <div>
                     <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">Total Harta Waris</h3>
-                    <p className="text-4xl font-black text-slate-800 tracking-tight">Rp {assets.totalAssets.toLocaleString('id-ID')}</p>
+                    <p className="text-4xl font-black text-slate-800 tracking-tight">{formatCurrency(assets.totalAssets)}</p>
                   </div>
                   <div className="text-right">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Harta Bersih (Tirkah)</h3>
-                    <p className="text-4xl font-black text-emerald-600 tracking-tight">Rp {calculation.afterPreDistribution.toLocaleString('id-ID')}</p>
+                    <p className="text-4xl font-black text-emerald-600 tracking-tight">{formatCurrency(calculation.afterPreDistribution)}</p>
                   </div>
                 </div>
                 
@@ -1060,7 +1065,7 @@ export default function App() {
                           </span>
                         </td>
                         <td className="p-8 text-right font-black text-2xl text-emerald-600 tracking-tighter">
-                          Rp {dist.amount.toLocaleString('id-ID')}
+                          {formatCurrency(dist.amount)}
                         </td>
                       </tr>
                     ))}
