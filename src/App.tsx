@@ -923,9 +923,18 @@ export default function App() {
                             <p className="text-xs text-emerald-100-safe-bright leading-relaxed font-medium">{consultation.dalilAnalysis}</p>
                           </div>
 
-                          <div className="p-5 bg-emerald-950-safe-deep rounded-2xl border-emerald-800-safe italic">
-                            <h5 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2 not-italic">Nasihat Bijak</h5>
-                            <p className="text-xs text-emerald-100-safe leading-relaxed font-medium">"{consultation.advice}"</p>
+                          <div className="space-y-4">
+                            <h5 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2 px-1">Nasihat Bijak Ahli Waris</h5>
+                            <div className="grid grid-cols-1 gap-3">
+                              {consultation.tips.map((tip, i) => (
+                                <div key={i} className="p-5 bg-emerald-950/50 rounded-2xl border border-emerald-800/50 flex gap-4 group hover:bg-emerald-900 transition-colors">
+                                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/10">
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  </div>
+                                  <p className="text-xs text-emerald-100-safe leading-relaxed font-medium">{tip}</p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
@@ -946,27 +955,6 @@ export default function App() {
         </div>
       </div>
 
-        {/* Catatan Penting Section */}
-        <section className="mt-8 sm:mt-12 bg-white rounded-[2rem] p-6 sm:p-10 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-emerald-50 rounded-lg">
-              <Info className="w-5 h-5 text-emerald-600" />
-            </div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-800">Catatan Penting</h2>
-          </div>
-          <ul className="space-y-3 sm:space-y-4">
-            {[
-              "Kalkulator ini menggunakan dasar hukum Al-Qur'an Surat An-Nisa ayat 11, 12, dan 176.",
-              "Fitur Harta Bersama dan Ahli Waris Pengganti mengacu pada Kompilasi Hukum Islam (KHI).",
-              "Hasil perhitungan ini bersifat edukatif. Untuk kepastian hukum, silakan hubungi Pengadilan Agama."
-            ].map((note, i) => (
-              <li key={i} className="flex gap-3 sm:gap-4 text-slate-500 text-xs sm:text-[15px] font-medium leading-relaxed">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-2.5 shrink-0" />
-                {note}
-              </li>
-            ))}
-          </ul>
-        </section>
       </main>
 
       {/* Hidden PDF Template */}

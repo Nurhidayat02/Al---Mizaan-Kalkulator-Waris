@@ -5,7 +5,7 @@ import { formatCurrency } from "../lib/utils";
 export interface AIConsultationResponse {
   explanation: string;
   dalilAnalysis: string;
-  advice: string;
+  tips: string[];
 }
 
 export class GeminiService {
@@ -36,9 +36,10 @@ export class GeminiService {
       Mohon berikan:
       1. Penjelasan singkat mengapa pembagiannya seperti itu (Analisis Hijab/Mahjub).
       2. Analisis Dalil Al-Qur'an atau Hadits yang relevan untuk kasus spesifik ini.
-      3. Nasihat bijak untuk para ahli waris agar tetap menjaga silaturahmi.
+      3. Minimal 3 Nasihat bijak untuk para ahli waris agar tetap menjaga silaturahmi (dalam bentuk poin-poin).
       
-      Format jawaban harus dalam JSON yang valid dengan key: "explanation", "dalilAnalysis", "advice".
+      Format jawaban harus dalam JSON yang valid dengan key: "explanation", "dalilAnalysis", "tips".
+      "tips" harus berupa array of strings.
       Gunakan bahasa Indonesia yang santun dan mudah dipahami.
     `;
 
