@@ -778,7 +778,12 @@ export default function App() {
                             <p className="text-base sm:text-xl font-black text-white break-all">
                               {formatCurrency(dist.amount)}
                             </p>
-                            <p className="text-[10px] sm:text-xs font-bold text-emerald-500-safe">
+                            {dist.count > 1 && (
+                              <p className="text-[10px] font-bold text-emerald-400 mt-1">
+                                {formatCurrency(dist.amount / dist.count)} / orang
+                              </p>
+                            )}
+                            <p className="text-[10px] sm:text-xs font-bold text-emerald-500-safe mt-1">
                               {dist.fraction.numerator}/{dist.fraction.denominator}
                             </p>
                           </div>
@@ -1054,6 +1059,11 @@ export default function App() {
                         </td>
                         <td className="p-8 text-right font-black text-2xl text-emerald-600 tracking-tighter">
                           {formatCurrency(dist.amount)}
+                          {dist.count > 1 && (
+                            <p className="text-xs text-slate-400 font-bold mt-1 tracking-normal">
+                              ({formatCurrency(dist.amount / dist.count)} / orang)
+                            </p>
+                          )}
                         </td>
                       </tr>
                     ))}
