@@ -214,9 +214,19 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     // If no descendants, Father is purely Ashabah (handled below)
   }
 
+  // Grandfather (Al-Jad as-Sahih)
+  if (has('GRANDFATHER') && !has('FATHER')) {
+    const hasDescendant = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
+    if (hasDescendant) {
+      addShare('GRANDFATHER', 1, 6, 'Ijma Sahabat', '1/6 (posisi ayah)',
+        'Kakek menempati posisi ayah jika ayah tidak ada dan ada keturunan. (Ijma Sahabat)');
+    }
+    // If no descendants, Grandfather can be Ashabah (handled later)
+  }
+
   if (has('MOTHER')) {
     const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
-    const hasMultipleSiblings = (count('BROTHER_GERMAN') + count('SISTER_GERMAN') + count('BROTHER_FATHER') + count('SISTER_FATHER')) >= 2;
+    const hasMultipleSiblings = (count('BROTHER_GERMAN') + count('SISTER_GERMAN') + count('BROTHER_FATHER') + count('SISTER_FATHER') + count('BROTHER_MOTHER') + count('SISTER_MOTHER')) >= 2;
     if (hasDescendants || hasMultipleSiblings) {
       addShare('MOTHER', 1, 6, 'QS. An-Nisa: 11', '1/6 karena ada keturunan/saudara',
         'Ibu mendapatkan seperenam bagian jika pewaris memiliki anak atau dua orang saudara atau lebih. (QS. An-Nisa: 11)');
@@ -224,6 +234,12 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
       addShare('MOTHER', 1, 3, 'QS. An-Nisa: 11', '1/3 karena tidak ada keturunan/saudara',
         'Ibu mendapatkan sepertiga bagian jika pewaris tidak memiliki anak atau dua orang saudara atau lebih. (QS. An-Nisa: 11)');
     }
+  }
+
+  // Grandmother (Al-Jaddah)
+  if (has('GRANDMOTHER') && !has('MOTHER')) {
+    addShare('GRANDMOTHER', 1, 6, 'Hadits Riwayat Abu Dawud', '1/6 (warisan nenek)',
+      'Nenek (baik dari pihak ibu maupun ayah) mendapatkan seperenam bagian jika tidak ada ibu. (HR. Abu Dawud dan Tirmidzi)');
   }
 
   // Daughters (Furud if no Son)
@@ -235,6 +251,26 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     } else {
       addShare('DAUGHTER', 2, 3, 'QS. An-Nisa: 11', '2/3 (lebih dari satu anak)',
         'Jika anak perempuan itu lebih dari dua, maka bagi mereka dua pertiga dari harta yang ditinggalkan. (QS. An-Nisa: 11)');
+    }
+  }
+
+  // Granddaughters (Furud if no Son/Grandson)
+  if (has('GRANDDAUGHTER') && !has('SON') && !has('GRANDSON')) {
+    const daughterCount = count('DAUGHTER');
+    const gdCount = count('GRANDDAUGHTER');
+    
+    if (daughterCount === 0) {
+      if (gdCount === 1) {
+        addShare('GRANDDAUGHTER', 1, 2, 'QS. An-Nisa: 11 (Qiyas)', '1/2 (cucu tunggal)',
+          'Jika anak perempuan itu seorang saja, maka ia memperoleh setengah harta. Cucu perempuan menempati posisi anak perempuan jika anak perempuan tidak ada. (Qiyas)');
+      } else {
+        addShare('GRANDDAUGHTER', 2, 3, 'QS. An-Nisa: 11 (Qiyas)', '2/3 (cucu jamak)',
+          'Jika cucu perempuan itu lebih dari dua, maka bagi mereka dua pertiga dari harta yang ditinggalkan. (Qiyas)');
+      }
+    } else if (daughterCount === 1) {
+      // Takmilatun lits-tsulutsain: 1/6 to complete 2/3
+      addShare('GRANDDAUGHTER', 1, 6, 'Hadits Riwayat Bukhari', '1/6 (pelengkap 2/3)',
+        'Cucu perempuan dari anak laki-laki mendapatkan seperenam bagian jika bersama dengan seorang anak perempuan kandung sebagai penyempurna dua pertiga bagian. (HR. Bukhari)');
     }
   }
 
