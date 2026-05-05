@@ -24,19 +24,25 @@ export const HEIR_LABELS: Record<HeirType, string> = {
   FATHER: 'Ayah',
   MOTHER: 'Ibu',
   GRANDFATHER: 'Kakek (Ayah dari Ayah)',
-  GRANDMOTHER: 'Nenek',
-  GRANDSON: 'Cucu Laki-laki (dari Anak Laki-laki)',
-  GRANDDAUGHTER: 'Cucu Perempuan (dari Anak Laki-laki)',
-  BROTHER_GERMAN: 'Saudara Kandung Laki-laki',
-  SISTER_GERMAN: 'Saudara Kandung Perempuan',
-  BROTHER_FATHER: 'Saudara Seayah Laki-laki',
-  SISTER_FATHER: 'Saudara Seayah Perempuan',
-  BROTHER_MOTHER: 'Saudara Seibu Laki-laki',
-  SISTER_MOTHER: 'Saudara Seibu Perempuan',
-  UNCLE_GERMAN: 'Paman Kandung',
-  UNCLE_FATHER: 'Paman Seayah',
-  SON_BROTHER_GERMAN: 'Keponakan Kandung (Laki-laki)',
-  SON_BROTHER_FATHER: 'Keponakan Seayah (Laki-laki)',
+  GRANDMOTHER_FATHER: 'Nenek dari Ayah',
+  GRANDMOTHER_MOTHER: 'Nenek dari Ibu',
+  GRANDSON: 'Cucu Laki-laki dari Anak Laki-laki',
+  GRANDDAUGHTER: 'Cucu Perempuan dari Anak Laki-laki',
+  GREAT_GRANDSON: 'Cicit Laki-laki dari Jalur Laki-laki',
+  BROTHER_GERMAN: 'Saudara Laki-laki Sekandung',
+  SISTER_GERMAN: 'Saudara Perempuan Sekandung',
+  BROTHER_FATHER: 'Saudara Laki-laki Seayah',
+  SISTER_FATHER: 'Saudara Perempuan Seayah',
+  BROTHER_MOTHER: 'Saudara Laki-laki Seibu',
+  SISTER_MOTHER: 'Saudara Perempuan Seibu',
+  UNCLE_GERMAN: 'Paman Kandung (Saudara Ayah)',
+  UNCLE_FATHER: 'Paman Seayah (Saudara Ayah)',
+  SON_BROTHER_GERMAN: 'Anak Laki-laki dari Saudara Laki-laki Sekandung',
+  SON_BROTHER_FATHER: 'Anak Laki-laki dari Saudara Laki-laki Seayah',
+  SON_UNCLE_GERMAN: 'Anak Laki-laki dari Paman Sekandung',
+  SON_UNCLE_FATHER: 'Anak Laki-laki dari Paman Seayah',
+  MU_TIQ: 'Tuan yang Memerdekakan (Al-Mu\'tiq)',
+  MU_TIQAH: 'Nyonya yang Memerdekakan (Al-Mu\'tiqah)',
 };
 
 export const HEIR_LABELS_AR: Record<HeirType, string> = {
@@ -47,9 +53,11 @@ export const HEIR_LABELS_AR: Record<HeirType, string> = {
   FATHER: 'الأب',
   MOTHER: 'الأم',
   GRANDFATHER: 'الجد',
-  GRANDMOTHER: 'الجدة',
+  GRANDMOTHER_FATHER: 'الجدة من الأب',
+  GRANDMOTHER_MOTHER: 'الجدة من الأم',
   GRANDSON: 'ابن الابن',
   GRANDDAUGHTER: 'بنت الابن',
+  GREAT_GRANDSON: 'ابن ابن الابن',
   BROTHER_GERMAN: 'الأخ الشقيق',
   SISTER_GERMAN: 'الأخت الشقيقة',
   BROTHER_FATHER: 'الأخ لأب',
@@ -60,6 +68,10 @@ export const HEIR_LABELS_AR: Record<HeirType, string> = {
   UNCLE_FATHER: 'العم لأب',
   SON_BROTHER_GERMAN: 'ابن الأخ الشقيق',
   SON_BROTHER_FATHER: 'ابن الأخ لأب',
+  SON_UNCLE_GERMAN: 'ابن العم الشقيق',
+  SON_UNCLE_FATHER: 'ابن العم لأب',
+  MU_TIQ: 'المعتق',
+  MU_TIQAH: 'المعتيقة',
 };
 
 const gcd = (a: number, b: number): number => b === 0 ? Math.abs(a) : gcd(b, a % b);
@@ -94,26 +106,30 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   const isBlocked = (type: HeirType): { blocked: boolean; by?: string } => {
     // 1. Ascendants
     if (type === 'GRANDFATHER' && has('FATHER')) return { blocked: true, by: 'Ayah' };
-    if (type === 'GRANDMOTHER' && has('MOTHER')) return { blocked: true, by: 'Ibu' };
+    if (type === 'GRANDMOTHER_MOTHER' && has('MOTHER')) return { blocked: true, by: 'Ibu' };
+    if (type === 'GRANDMOTHER_FATHER' && (has('MOTHER') || has('FATHER'))) return { blocked: true, by: 'Ibu/Ayah' };
 
     // 2. Descendants
+    const hasHigherMaleDescendant = has('SON') || has('GRANDSON');
     if (type === 'GRANDSON' && has('SON')) return { blocked: true, by: 'Anak Laki-laki' };
     if (type === 'GRANDDAUGHTER' && has('SON')) return { blocked: true, by: 'Anak Laki-laki' };
+    if (type === 'GREAT_GRANDSON' && hasHigherMaleDescendant) return { blocked: true, by: 'Anak Laki/Cucu Laki' };
 
     // 3. Siblings
-    if (type === 'BROTHER_GERMAN' && (has('SON') || has('GRANDSON') || has('FATHER'))) return { blocked: true, by: 'Anak Laki/Cucu/Ayah' };
-    if (type === 'SISTER_GERMAN' && (has('SON') || has('GRANDSON') || has('FATHER'))) return { blocked: true, by: 'Anak Laki/Cucu/Ayah' };
+    const blocksSiblings = has('SON') || has('GRANDSON') || has('GREAT_GRANDSON') || has('FATHER');
+    if (type === 'BROTHER_GERMAN' && blocksSiblings) return { blocked: true, by: 'Anak/Cucu/Ayah' };
+    if (type === 'SISTER_GERMAN' && blocksSiblings) return { blocked: true, by: 'Anak/Cucu/Ayah' };
     
-    if (type === 'BROTHER_FATHER' && (has('SON') || has('GRANDSON') || has('FATHER') || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak Laki/Cucu/Ayah/Saudara Kandung' };
-    if (type === 'SISTER_FATHER' && (has('SON') || has('GRANDSON') || has('FATHER') || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak Laki/Cucu/Ayah/Saudara Kandung' };
+    if (type === 'BROTHER_FATHER' && (blocksSiblings || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
+    if (type === 'SISTER_FATHER' && (blocksSiblings || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
 
     if ((type === 'BROTHER_MOTHER' || type === 'SISTER_MOTHER') && 
-        (has('SON') || has('GRANDSON') || has('DAUGHTER') || has('GRANDDAUGHTER') || has('FATHER') || has('GRANDFATHER'))) {
-      return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek' };
+        (has('SON') || has('GRANDSON') || has('GREAT_GRANDSON') || has('DAUGHTER') || has('GRANDDAUGHTER') || has('FATHER') || has('GRANDFATHER'))) {
+      return { blocked: true, by: 'Anak/Cucu/Cicit/Ayah/Kakek' };
     }
 
     // 4. Nephews (Son of Brother)
-    const blocksNephewGerman = has('SON') || has('GRANDSON') || has('FATHER') || has('GRANDFATHER') || has('BROTHER_GERMAN') || has('BROTHER_FATHER');
+    const blocksNephewGerman = blocksSiblings || has('GRANDFATHER') || has('BROTHER_GERMAN') || has('BROTHER_FATHER');
     if (type === 'SON_BROTHER_GERMAN' && blocksNephewGerman) return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek/Saudara' };
     
     const blocksNephewFather = blocksNephewGerman || has('SON_BROTHER_GERMAN');
@@ -125,6 +141,18 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
 
     const blocksUncleFather = blocksUncleGerman || has('UNCLE_GERMAN');
     if (type === 'UNCLE_FATHER' && blocksUncleFather) return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek/Saudara/Keponakan/Paman Kandung' };
+
+    // 6. Cousins
+    const blocksCousinGerman = blocksUncleFather || has('UNCLE_FATHER');
+    if (type === 'SON_UNCLE_GERMAN' && blocksCousinGerman) return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek/Saudara/Paman' };
+
+    const blocksCousinFather = blocksCousinGerman || has('SON_UNCLE_GERMAN');
+    if (type === 'SON_UNCLE_FATHER' && blocksCousinFather) return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek/Saudara/Paman/Sepupu Kandung' };
+
+    // 7. Mu'tiq
+    const blocksMuTiq = blocksCousinFather || has('SON_UNCLE_FATHER');
+    if (type === 'MU_TIQ' && blocksMuTiq) return { blocked: true, by: 'Ahli Waris Nasab' };
+    if (type === 'MU_TIQAH' && blocksMuTiq) return { blocked: true, by: 'Ahli Waris Nasab' };
 
     return { blocked: false };
   };
@@ -177,7 +205,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
 
   // Example Logic for Husband/Wife
   if (has('HUSBAND')) {
-    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
+    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER') || has('GREAT_GRANDSON');
     if (hasDescendants) {
       addShare('HUSBAND', 1, 4, 'QS. An-Nisa: 12', '1/4 karena ada keturunan', 
         'Suami mendapatkan seperempat bagian dari harta yang ditinggalkan istri jika istri mempunyai anak atau cucu. (QS. An-Nisa: 12)');
@@ -188,7 +216,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   if (has('WIFE')) {
-    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
+    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER') || has('GREAT_GRANDSON');
     if (hasDescendants) {
       addShare('WIFE', 1, 8, 'QS. An-Nisa: 12', '1/8 karena ada keturunan',
         'Para istri mendapatkan seperdelapan bagian dari harta yang ditinggalkan suami jika suami mempunyai anak atau cucu. (QS. An-Nisa: 12)');
@@ -200,7 +228,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
 
   // Father/Mother
   if (has('FATHER')) {
-    const hasMaleDescendant = has('SON') || has('GRANDSON');
+    const hasMaleDescendant = has('SON') || has('GRANDSON') || has('GREAT_GRANDSON');
     const hasFemaleDescendant = has('DAUGHTER') || has('GRANDDAUGHTER');
     
     if (hasMaleDescendant) {
@@ -216,7 +244,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
 
   // Grandfather (Al-Jad as-Sahih)
   if (has('GRANDFATHER') && !has('FATHER')) {
-    const hasDescendant = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
+    const hasDescendant = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER') || has('GREAT_GRANDSON');
     if (hasDescendant) {
       addShare('GRANDFATHER', 1, 6, 'Ijma Sahabat', '1/6 (posisi ayah)',
         'Kakek menempati posisi ayah jika ayah tidak ada dan ada keturunan. (Ijma Sahabat)');
@@ -225,7 +253,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   if (has('MOTHER')) {
-    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER');
+    const hasDescendants = has('SON') || has('DAUGHTER') || has('GRANDSON') || has('GRANDDAUGHTER') || has('GREAT_GRANDSON');
     const hasMultipleSiblings = (count('BROTHER_GERMAN') + count('SISTER_GERMAN') + count('BROTHER_FATHER') + count('SISTER_FATHER') + count('BROTHER_MOTHER') + count('SISTER_MOTHER')) >= 2;
     if (hasDescendants || hasMultipleSiblings) {
       addShare('MOTHER', 1, 6, 'QS. An-Nisa: 11', '1/6 karena ada keturunan/saudara',
@@ -237,9 +265,23 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   // Grandmother (Al-Jaddah)
-  if (has('GRANDMOTHER') && !has('MOTHER')) {
-    addShare('GRANDMOTHER', 1, 6, 'Hadits Riwayat Abu Dawud', '1/6 (warisan nenek)',
-      'Nenek (baik dari pihak ibu maupun ayah) mendapatkan seperenam bagian jika tidak ada ibu. (HR. Abu Dawud dan Tirmidzi)');
+  if (!has('MOTHER')) {
+    const motherGrandmother = has('GRANDMOTHER_MOTHER');
+    const fatherGrandmother = has('GRANDMOTHER_FATHER') && !has('FATHER');
+    
+    if (motherGrandmother && fatherGrandmother) {
+      // Both share 1/6
+      addShare('GRANDMOTHER_MOTHER', 1, 12, 'Hadits (Berbagi 1/6)', '1/12 (berbagi 1/6)',
+        'Ketika terdapat dua nenek yang berhak, maka mereka berbagi rata bagian seperenam. (HR. Abu Dawud)');
+      addShare('GRANDMOTHER_FATHER', 1, 12, 'Hadits (Berbagi 1/6)', '1/12 (berbagi 1/6)',
+        'Ketika terdapat dua nenek yang berhak, maka mereka berbagi rata bagian seperenam. (HR. Abu Dawud)');
+    } else if (motherGrandmother) {
+      addShare('GRANDMOTHER_MOTHER', 1, 6, 'Hadits Riwayat Abu Dawud', '1/6 (warisan nenek)',
+        'Nenek dari pihak ibu mendapatkan seperenam bagian jika tidak ada ibu. (HR. Abu Dawud dan Tirmidzi)');
+    } else if (fatherGrandmother) {
+      addShare('GRANDMOTHER_FATHER', 1, 6, 'Hadits Riwayat Abu Dawud', '1/6 (warisan nenek)',
+        'Nenek dari pihak ayah mendapatkan seperenam bagian jika tidak ada ibu dan tidak ada ayah. (HR. Abu Dawud dan Tirmidzi)');
+    }
   }
 
   // Daughters (Furud if no Son)
@@ -331,12 +373,12 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   
   // Priority list for Ashabah Bin Nafsi (Male Residuaries)
   const ashabahPriority: HeirType[] = [
-    'SON', 'GRANDSON', 'FATHER', 'GRANDFATHER', 
+    'SON', 'GRANDSON', 'GREAT_GRANDSON', 'FATHER', 'GRANDFATHER', 
     'BROTHER_GERMAN', 'BROTHER_FATHER'
   ];
 
   // Insert Ashabah Ma'al Ghair into priority if applicable
-  if (hasFemaleDescendant && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER')) {
+  if (hasFemaleDescendant && !has('SON') && !has('GRANDSON') && !has('GREAT_GRANDSON') && !has('FATHER') && !has('GRANDFATHER')) {
     // Note: BROTHER_GERMAN blocks Sister German from being Ma'al Ghair (instead they become Bil Ghair)
     if (fullSisterCount > 0 && !has('BROTHER_GERMAN')) {
       ashabahPriority.splice(ashabahPriority.indexOf('BROTHER_GERMAN'), 0, 'SISTER_GERMAN');
@@ -346,7 +388,12 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   // Rest of priority
-  ashabahPriority.push('SON_BROTHER_GERMAN', 'SON_BROTHER_FATHER', 'UNCLE_GERMAN', 'UNCLE_FATHER');
+  ashabahPriority.push(
+    'SON_BROTHER_GERMAN', 'SON_BROTHER_FATHER', 
+    'UNCLE_GERMAN', 'UNCLE_FATHER',
+    'SON_UNCLE_GERMAN', 'SON_UNCLE_FATHER',
+    'MU_TIQ', 'MU_TIQAH'
+  );
 
   // Find the highest priority active and unblocked residuary
   const closestAshabahType = ashabahPriority.find(type => has(type) && !isBlocked(type).blocked);
@@ -354,8 +401,10 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   if (closestAshabahType && remainingNumerator > 0) {
     const unitValue = remainingNumerator; // Simplified for now, assuming 1 unit unless mixed gender
     
-    if (closestAshabahType === 'SON' || closestAshabahType === 'GRANDSON') {
+    if (closestAshabahType === 'SON' || closestAshabahType === 'GRANDSON' || closestAshabahType === 'GREAT_GRANDSON') {
       const maleType = closestAshabahType;
+      // GREAT_GRANDSON doesn't have a direct female counterpart in our list yet, 
+      // but she could be GRANDDAUGHTER if at same level. For simplicity:
       const femaleType = maleType === 'SON' ? 'DAUGHTER' : 'GRANDDAUGHTER';
       
       const maleCount = count(maleType);
