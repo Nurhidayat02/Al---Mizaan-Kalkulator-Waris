@@ -156,14 +156,14 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     }
 
     const multiplier = baseDenominator / den;
-    const totalHeirNumerator = num * multiplier;
+    const initialSiham = num * multiplier;
     
     results.push({
       heirType: type,
       label: HEIR_LABELS[type],
       count: count(type),
       fraction: { numerator: num, denominator: den },
-      siham: 0, // Calculated later
+      siham: initialSiham, // Pre-calculated siham over baseDenominator
       amount: 0,
       isAshabah: false,
       dalil,
@@ -172,7 +172,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
       shareDescription: `${num}/${den}`
     });
     
-    totalNumerator += totalHeirNumerator;
+    totalNumerator += initialSiham;
   };
 
   // Example Logic for Husband/Wife
@@ -288,7 +288,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   // Sisters (German) as Furud
-  if (has('SISTER_GERMAN') && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN')) {
+  if (has('SISTER_GERMAN') && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN') && !has('DAUGHTER') && !has('GRANDDAUGHTER')) {
     const sisterCount = count('SISTER_GERMAN');
     if (sisterCount === 1) {
       addShare('SISTER_GERMAN', 1, 2, 'QS. An-Nisa: 176', '1/2 (saudara kandung tunggal)',
@@ -300,7 +300,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   // Sisters (Father's side) as Furud
-  if (has('SISTER_FATHER') && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN') && !has('BROTHER_FATHER')) {
+  if (has('SISTER_FATHER') && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN') && !has('BROTHER_FATHER') && !has('DAUGHTER') && !has('GRANDDAUGHTER')) {
     const sisterFatherCount = count('SISTER_FATHER');
     const sisterGermanCount = count('SISTER_GERMAN');
     
@@ -321,17 +321,34 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   }
 
   // Ashabah Logic
-  const remainingNumerator = baseDenominator - totalNumerator;
+  let remainingNumerator = baseDenominator - totalNumerator;
+  
+  // Logic for Ashabah Ma'al Ghair (Sisters with Daughters/Granddaughters)
+  // According to rule: "Make sisters ashabah along with daughters"
+  const fullSisterCount = count('SISTER_GERMAN');
+  const sisterFatherCount = count('SISTER_FATHER');
+  const hasFemaleDescendant = has('DAUGHTER') || has('GRANDDAUGHTER');
   
   // Priority list for Ashabah Bin Nafsi (Male Residuaries)
   const ashabahPriority: HeirType[] = [
     'SON', 'GRANDSON', 'FATHER', 'GRANDFATHER', 
-    'BROTHER_GERMAN', 'BROTHER_FATHER', 
-    'SON_BROTHER_GERMAN', 'SON_BROTHER_FATHER', 
-    'UNCLE_GERMAN', 'UNCLE_FATHER'
+    'BROTHER_GERMAN', 'BROTHER_FATHER'
   ];
 
-  // Find the highest priority active and unblocked male residuary
+  // Insert Ashabah Ma'al Ghair into priority if applicable
+  if (hasFemaleDescendant && !has('SON') && !has('GRANDSON') && !has('FATHER') && !has('GRANDFATHER')) {
+    // Note: BROTHER_GERMAN blocks Sister German from being Ma'al Ghair (instead they become Bil Ghair)
+    if (fullSisterCount > 0 && !has('BROTHER_GERMAN')) {
+      ashabahPriority.splice(ashabahPriority.indexOf('BROTHER_GERMAN'), 0, 'SISTER_GERMAN');
+    } else if (sisterFatherCount > 0 && !has('BROTHER_GERMAN') && !has('BROTHER_FATHER') && fullSisterCount === 0) {
+      ashabahPriority.splice(ashabahPriority.indexOf('BROTHER_FATHER'), 0, 'SISTER_FATHER');
+    }
+  }
+
+  // Rest of priority
+  ashabahPriority.push('SON_BROTHER_GERMAN', 'SON_BROTHER_FATHER', 'UNCLE_GERMAN', 'UNCLE_FATHER');
+
+  // Find the highest priority active and unblocked residuary
   const closestAshabahType = ashabahPriority.find(type => has(type) && !isBlocked(type).blocked);
 
   if (closestAshabahType && remainingNumerator > 0) {
@@ -413,8 +430,23 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
           shareDescription: 'Sisa (1:1)'
         });
       }
+    } else if (closestAshabahType === 'SISTER_GERMAN' || closestAshabahType === 'SISTER_FATHER') {
+      // Ashabah Ma'al Ghair
+      results.push({
+        heirType: closestAshabahType,
+        label: HEIR_LABELS[closestAshabahType],
+        count: count(closestAshabahType),
+        fraction: { numerator: remainingNumerator, denominator: baseDenominator },
+        siham: remainingNumerator,
+        amount: 0,
+        isAshabah: true,
+        dalil: 'Hadits Nabi SAW',
+        detailedDalil: 'Jadikanlah saudara-saudara perempuan bersama anak-anak perempuan sebagai ashabah. (Hadits Riwayat Bukhari)',
+        isBlocked: false,
+        shareDescription: 'Sisa (Ma\'al Ghair)'
+      });
     } else {
-      // Other male residuaries (Nephews, Uncles, Father/Grandfather as pure Ashabah)
+      // Other male residuaries
       const existingRes = results.find(r => r.heirType === closestAshabahType);
       if (existingRes) {
         existingRes.fraction.numerator += remainingNumerator;
@@ -450,7 +482,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     // RADD Logic: Redistribute to Furud (except spouse)
     const spouseNumerator = results
       .filter(r => (r.heirType === 'HUSBAND' || r.heirType === 'WIFE') && !r.isBlocked)
-      .reduce((sum, r) => sum + (r.fraction.numerator * (baseDenominator / r.fraction.denominator)), 0);
+      .reduce((sum, r) => sum + r.siham, 0);
     
     const nonSpouseNumerator = totalNumerator - spouseNumerator;
     const remainingToDistribute = baseDenominator - totalNumerator;
@@ -459,10 +491,11 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
       // Proportional redistribution to non-spouse heirs
       results.forEach(res => {
         if (!res.isBlocked && res.heirType !== 'HUSBAND' && res.heirType !== 'WIFE') {
-          const currentNum = res.fraction.numerator * (baseDenominator / res.fraction.denominator);
-          const raddShare = (currentNum / nonSpouseNumerator) * remainingToDistribute;
-          // Adjust the fraction to reflect the new share
-          res.fraction.numerator = currentNum + raddShare;
+          const currentSiham = res.siham;
+          const raddShare = (currentSiham / nonSpouseNumerator) * remainingToDistribute;
+          // Adjust the siham
+          res.siham = currentSiham + raddShare;
+          res.fraction.numerator = res.siham;
           res.fraction.denominator = baseDenominator;
         }
       });
@@ -478,14 +511,6 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     baseDenominator = allDens.reduce((acc, den) => lcm(acc, den), 1);
   }
 
-  // Calculate Initial Siham with the new global baseDenominator
-  results.forEach(res => {
-    if (!res.isBlocked) {
-      res.fraction.numerator = Math.round(res.fraction.numerator * (baseDenominator / res.fraction.denominator));
-      res.fraction.denominator = baseDenominator;
-    }
-  });
-
   // Inkisar Logic (Multiple heirs sharing a siham that is not divisible)
   let adjustmentMultiplier = 1;
   
@@ -493,7 +518,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     if (res.isBlocked) return;
     
     const heirCount = res.count || 1;
-    const siham = res.fraction.numerator;
+    const siham = res.siham;
     
     if (siham % heirCount !== 0) {
       const factor = heirCount / gcd(siham, heirCount);
@@ -504,7 +529,8 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   if (adjustmentMultiplier > 1) {
     baseDenominator *= adjustmentMultiplier;
     results.forEach(res => {
-      res.fraction.numerator *= adjustmentMultiplier;
+      res.siham *= adjustmentMultiplier;
+      res.fraction.numerator = res.siham;
       res.fraction.denominator = baseDenominator;
     });
   }
@@ -512,8 +538,9 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
   // Calculate Final Siham and Amounts
   results.forEach(res => {
     if (!res.isBlocked) {
-      res.siham = res.fraction.numerator;
-      const effectiveShare = res.fraction.numerator / res.fraction.denominator;
+      // The actual proportion is res.siham / baseDenominator
+      // We must use the current baseDenominator (which might have been upped by AUL)
+      const effectiveShare = res.siham / baseDenominator;
       res.amount = netAssets * effectiveShare;
     } else {
       res.siham = 0;
