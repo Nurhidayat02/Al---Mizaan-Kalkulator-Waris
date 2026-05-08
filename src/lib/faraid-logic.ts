@@ -117,11 +117,16 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
 
     // 3. Siblings
     const blocksSiblings = has('SON') || has('GRANDSON') || has('GREAT_GRANDSON') || has('FATHER');
+    const hasFemaleDescendant = has('DAUGHTER') || has('GRANDDAUGHTER');
+    const isSisterGermanMaalGhair = has('SISTER_GERMAN') && hasFemaleDescendant && !has('SON') && !has('GRANDSON') && !has('GREAT_GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN');
+    const isSisterFatherMaalGhair = has('SISTER_FATHER') && hasFemaleDescendant && !has('SON') && !has('GRANDSON') && !has('GREAT_GRANDSON') && !has('FATHER') && !has('GRANDFATHER') && !has('BROTHER_GERMAN') && !has('BROTHER_FATHER') && !has('SISTER_GERMAN');
+
     if (type === 'BROTHER_GERMAN' && blocksSiblings) return { blocked: true, by: 'Anak/Cucu/Ayah' };
     if (type === 'SISTER_GERMAN' && blocksSiblings) return { blocked: true, by: 'Anak/Cucu/Ayah' };
     
-    if (type === 'BROTHER_FATHER' && (blocksSiblings || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
-    if (type === 'SISTER_FATHER' && (blocksSiblings || has('BROTHER_GERMAN'))) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
+    const blocksBrotherFather = blocksSiblings || has('BROTHER_GERMAN') || isSisterGermanMaalGhair;
+    if (type === 'BROTHER_FATHER' && blocksBrotherFather) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
+    if (type === 'SISTER_FATHER' && blocksBrotherFather) return { blocked: true, by: 'Anak/Cucu/Ayah/Saudara Kandung' };
 
     if ((type === 'BROTHER_MOTHER' || type === 'SISTER_MOTHER') && 
         (has('SON') || has('GRANDSON') || has('GREAT_GRANDSON') || has('DAUGHTER') || has('GRANDDAUGHTER') || has('FATHER') || has('GRANDFATHER'))) {
@@ -129,7 +134,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     }
 
     // 4. Nephews (Son of Brother)
-    const blocksNephewGerman = blocksSiblings || has('GRANDFATHER') || has('BROTHER_GERMAN') || has('BROTHER_FATHER');
+    const blocksNephewGerman = blocksBrotherFather || has('BROTHER_FATHER') || isSisterFatherMaalGhair || has('GRANDFATHER');
     if (type === 'SON_BROTHER_GERMAN' && blocksNephewGerman) return { blocked: true, by: 'Anak/Cucu/Ayah/Kakek/Saudara' };
     
     const blocksNephewFather = blocksNephewGerman || has('SON_BROTHER_GERMAN');
@@ -178,7 +183,7 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
         detailedDalil: `Ahli waris ini tidak mendapatkan bagian karena terhalang (hijab mahjub) oleh ${blockStatus.by}.`,
         isBlocked: true,
         blockedBy: blockStatus.by,
-        shareDescription: '0'
+        shareDescription: 'Terhijab'
       });
       return;
     }
@@ -527,6 +532,29 @@ export function calculateFaraid(assets: AssetData, heirs: HeirInput[]): FaraidCa
     }
     totalNumerator = baseDenominator;
   }
+
+  // Final pass to include all heirs that were added by user but didn't get a share (e.g. blocked or out-prioritized ashabah)
+  activeHeirGroups.forEach(group => {
+    if (!results.some(r => r.heirType === group.type)) {
+      const blockStatus = isBlocked(group.type);
+      results.push({
+        heirType: group.type,
+        label: HEIR_LABELS[group.type],
+        count: group.count,
+        fraction: { numerator: 0, denominator: 1 },
+        siham: 0,
+        amount: 0,
+        isAshabah: false,
+        dalil: blockStatus.blocked ? `Terhijab oleh ${blockStatus.by}` : 'Tidak mendapat bagian sisa',
+        detailedDalil: blockStatus.blocked 
+          ? `Ahli waris ini tidak mendapatkan bagian karena terhalang (hijab mahjub) oleh ${blockStatus.by}.`
+          : `Ahli waris ini adalah ashabah namun ada ahli waris ashabah lain yang lebih dekat derajatnya.`,
+        isBlocked: true,
+        blockedBy: blockStatus.by || 'Ashabah yang lebih dekat',
+        shareDescription: blockStatus.blocked ? 'Terhijab' : '0'
+      });
+    }
+  });
 
   // Calculate remaining for Ashabah
   let adjustmentType: 'AUL' | 'RADD' | 'NORMAL' = 'NORMAL';

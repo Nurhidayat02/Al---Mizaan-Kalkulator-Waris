@@ -678,18 +678,22 @@ export default function App() {
                         <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 w-full md:w-auto">
                           <button 
                             onClick={() => updateHeirGender(heir.id, 'MALE')}
+                            disabled={HEIR_OPTIONS.find(o => o.type === heir.type)?.gender === 'FEMALE'}
                             className={cn(
                               "flex-1 md:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all",
-                              heir.gender === 'MALE' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-slate-400 hover:text-slate-600"
+                              heir.gender === 'MALE' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-slate-400 hover:text-slate-600",
+                              HEIR_OPTIONS.find(o => o.type === heir.type)?.gender === 'FEMALE' && "opacity-20 cursor-not-allowed"
                             )}
                           >
                             Laki-laki
                           </button>
                           <button 
                             onClick={() => updateHeirGender(heir.id, 'FEMALE')}
+                            disabled={HEIR_OPTIONS.find(o => o.type === heir.type)?.gender === 'MALE'}
                             className={cn(
                               "flex-1 md:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all",
-                              heir.gender === 'FEMALE' ? "bg-pink-600 text-white shadow-md shadow-pink-100" : "text-slate-400 hover:text-slate-600"
+                              heir.gender === 'FEMALE' ? "bg-pink-600 text-white shadow-md shadow-pink-100" : "text-slate-400 hover:text-slate-600",
+                              HEIR_OPTIONS.find(o => o.type === heir.type)?.gender === 'MALE' && "opacity-20 cursor-not-allowed"
                             )}
                           >
                             Perempuan
@@ -776,30 +780,49 @@ export default function App() {
                         <div className="flex justify-between items-start mb-4 gap-2">
                           <div className="min-w-0">
                             <h5 className="text-base sm:text-lg font-black text-white mb-1 truncate">{dist.label}</h5>
-                            <p className="text-[9px] sm:text-[10px] font-black text-emerald-500 uppercase tracking-widest">
-                              {dist.isAshabah ? 'ASHABAH' : 'ASHABUL FURUD'}
+                            <p className={cn(
+                              "text-[9px] sm:text-[10px] font-black uppercase tracking-widest",
+                              dist.isBlocked ? "text-red-400" : "text-emerald-500"
+                            )}>
+                              {dist.isBlocked ? 'TERHIJAB (MAHJUB)' : (dist.isAshabah ? 'ASHABAH' : 'ASHABUL FURUD')}
                             </p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-base sm:text-xl font-black text-white break-all">
+                            <p className={cn(
+                              "text-base sm:text-xl font-black break-all",
+                              dist.isBlocked ? "text-slate-400 opacity-50" : "text-white"
+                            )}>
                               {formatCurrency(dist.amount)}
                             </p>
-                            {dist.count > 1 && (
+                            {dist.count > 1 && !dist.isBlocked && (
                               <p className="text-[10px] font-bold text-emerald-400 mt-1">
                                 {formatCurrency(dist.amount / dist.count)} / orang
                               </p>
                             )}
-                            <p className="text-[10px] sm:text-xs font-bold text-emerald-500-safe mt-1">
-                              {dist.fraction.numerator}/{dist.fraction.denominator}
-                            </p>
+                            {!dist.isBlocked && (
+                              <p className="text-[10px] sm:text-xs font-bold text-emerald-500-safe mt-1">
+                                {dist.fraction.numerator}/{dist.fraction.denominator}
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex gap-3 p-4 bg-emerald-950-safe-deep rounded-2xl border-emerald-900-safe">
-                          <BookOpen className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <div className={cn(
+                          "flex gap-3 p-4 rounded-2xl border transition-all",
+                          dist.isBlocked 
+                            ? "bg-red-950-safe-blocked border-red-900-safe" 
+                            : "bg-emerald-950-safe-deep border-emerald-900-safe"
+                        )}>
+                          <BookOpen className={cn(
+                            "w-4 h-4 shrink-0 mt-0.5",
+                            dist.isBlocked ? "text-red-500" : "text-emerald-500"
+                          )} />
                           <div className="flex-1">
-                            <p className="text-[11px] leading-relaxed text-emerald-100-safe font-medium">
-                              {dist.shareDescription}. Dalil: {dist.dalil}
+                            <p className={cn(
+                              "text-[11px] leading-relaxed font-bold",
+                              dist.isBlocked ? "text-red-100" : "text-emerald-100-safe"
+                            )}>
+                              {dist.isBlocked ? "" : `${dist.shareDescription}. `}Dalil: {dist.dalil}
                             </p>
                             {dist.detailedDalil && (
                               <button 
